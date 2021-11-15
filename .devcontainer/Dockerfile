@@ -21,4 +21,7 @@ RUN groupadd --gid $USER_GID $USERNAME \
 RUN mkdir /home/developer/birdClassification/ 
 WORKDIR /home/developer/birdClassification/
 
+# Workaround to make opencv work...
+RUN apt install libgl1-mesa-glx
+
 USER $USERNAME
