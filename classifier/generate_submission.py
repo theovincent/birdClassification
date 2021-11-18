@@ -47,8 +47,8 @@ def generate_submission_cli(argvs=sys.argv[1:]):
     output_file = open(args.output_path, "w")
     output_file.write("Id,Category\n")
 
-    for f in tqdm(os.listdir("bird_dataset/test_images/mistery_category")):
-        if "jpg" in f:
+    for file in tqdm(os.listdir("bird_dataset/test_images/mistery_category")):
+        if "jpg" in file:
             data = data_transforms(pil_loader("bird_dataset/test_images/mistery_category/" + f))
             data = data.view(1, data.size(0), data.size(1), data.size(2))
             if use_cuda:

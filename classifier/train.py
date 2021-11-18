@@ -2,6 +2,7 @@ import sys
 import os
 
 import torch
+import pandas as pd
 
 
 def train_cli(argvs=sys.argv[1:]):
@@ -71,6 +72,9 @@ def train_cli(argvs=sys.argv[1:]):
         print("\n\n!! Using CPU !!\n\n")
 
     loss = cross_entropy_loss()
+    losses = pd.DataFrame(
+        None, index=range(1, args.n_epochs + 1), columns=["train_loss", "validation_loss", "validation_accuracy"]
+    )
 
     # Define the data loaders
     args.path_data = "bird_dataset/" + args.path_data
@@ -81,16 +85,25 @@ def train_cli(argvs=sys.argv[1:]):
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
-        train_on_epoch(model, loss, optimizer, train_loader, use_cuda)
-        validation(model, loss, validation_loader, use_cuda)
+        train_loss = train_on_epoch(model, loss, optimizer, train_loader, use_cuda) / args.batch_size
+        validation_loss, validation_accuracy = validation(model, loss, validation_loader, use_cuda)
 
+        losses.loc[epoch, ["train_loss", "validation_loss", "validation_accuracy"]] = [
+            train_loss,
+            validation_loss,
+            validation_accuracy,
+        ]
         if epoch % 2 == 1:
-            weights_path = args.output_path + f"/{args.model}_" + str(epoch) + ".pth"
+            weights_path = args.output_path + f"/{args.model}_{str(epoch)}.pth"
             torch.save(model.state_dict(), weights_path)
+
+    losses.reset_index().to_feather(args.output_path + f"/{args.model}.feather")
 
 
 def train_on_epoch(model, loss, optimizer, loader, use_cuda):
+    loss_on_batch = None
     model.train()
+
     for batch_idx, (data, target) in enumerate(loader):
         if use_cuda:
             data, target = data.cuda(), target.cuda()
@@ -103,7 +116,10 @@ def train_on_epoch(model, loss, optimizer, loader, use_cuda):
         loss_error.backward()
         optimizer.step()
 
-        if batch_idx % (len(loader) // 10) == 0:
+        if batch_idx % (len(loader) // 5) == 0:
+            loss_on_batch = loss_error.data.item()
             print(
-                f"[{batch_idx * len(data)}/{len(loader.dataset)} ({int(100.0 * batch_idx / len(loader))}%)]\tLoss: {loss_error.data.item():.6f}"
+                f"[{batch_idx * len(data)}/{len(loader.dataset)} ({int(100.0 * batch_idx / len(loader))}%)]\tLoss: {loss_on_batch:.6f}"
             )
+
+    return loss_on_batch
