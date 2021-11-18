@@ -6,7 +6,16 @@ setup(
     description="Classifies bird from the Caltech-UCSD Birds-200-2011 dataset.",
     packages=["classifier", "segmentor"],
     requires=["setuptools", "wheel"],
-    install_requires=["torch", "torchvision", "tqdm", "detectron2==0.6+cu102", "opencv-python", "pandas", "ipywidgets"],
+    install_requires=[
+        "torch",
+        "torchvision",
+        "tqdm",
+        "detectron2==0.6+cu102",
+        "opencv-python",
+        "pandas",
+        "ipywidgets",
+        "pyarrow",
+    ],
     extras_require={
         "dev": ["tqdm", "ipykernel", "black"],
     },
