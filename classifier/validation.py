@@ -14,8 +14,9 @@ def validation(model, loss, loader, use_cuda):
         correct += pred.eq(target.data.view_as(pred)).cpu().sum()
 
     validation_loss /= len(loader.dataset)
+    accuracy = int(100.0 * correct / len(loader.dataset))
 
     print("\n\nValidation set:")
-    print(
-        f"Average loss: {validation_loss:.4f}, Accuracy: {correct}/{len(loader.dataset)} ({int(100.0 * correct / len(loader.dataset))}%)"
-    )
+    print(f"Average loss: {validation_loss:.4f}, Accuracy: {correct}/{len(loader.dataset)} ({accuracy}%)")
+
+    return validation_loss, accuracy

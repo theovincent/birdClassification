@@ -2,7 +2,7 @@ import sys
 import os
 
 import torch
-from tqdm import tqdm
+import pandas as pd
 
 
 def train_cli(argvs=sys.argv[1:]):
@@ -11,21 +11,37 @@ def train_cli(argvs=sys.argv[1:]):
     import torch.optim as optim
 
     from classifier.loader import loader
-    from classifier.model import Net
+    from classifier.model import get_model
     from classifier.loss import cross_entropy_loss
     from classifier.validation import validation
 
     parser = argparse.ArgumentParser("Pipeline to train a model to classify the birds")
     parser.add_argument(
-        "-b", "--batch-size", type=int, default=64, metavar="B", help="input batch size for training (default: 64)"
+        "-m",
+        "--model",
+        type=str,
+        required=True,
+        metavar="M",
+        help="the model name (required)",
+        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "inception"],
     )
     parser.add_argument(
-        "-e", "--n_epochs", type=int, default=10, metavar="N", help="number of epochs to train (default: 10)"
+        "-pd",
+        "--path_data",
+        type=str,
+        required=True,
+        metavar="PD",
+        help="the path that leads to the data, 'bird_dataset' will be added to the front (required)",
     )
     parser.add_argument(
-        "-lr", "--learning_rate", type=float, default=0.1, metavar="LR", help="learning rate (default: 0.01)"
+        "-b", "--batch-size", type=int, default=8, metavar="B", help="input batch size for training (default: 64)"
     )
-    parser.add_argument("-m", "--momentum", type=float, default=0.5, metavar="M", help="SGD momentum (default: 0.5)")
+    parser.add_argument(
+        "-e", "--n_epochs", type=int, default=1, metavar="N", help="number of epochs to train (default: 10)"
+    )
+    parser.add_argument(
+        "-lr", "--learning_rate", type=float, default=0.001, metavar="LR", help="learning rate (default: 0.01)"
+    )
     parser.add_argument("-s", "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)")
     parser.add_argument(
         "-o",
@@ -33,11 +49,12 @@ def train_cli(argvs=sys.argv[1:]):
         type=str,
         default="output",
         metavar="E",
-        help="folder where experiment outputs are located (default: output)",
+        help="folder where experiment outputs are located, 'output' will be added to the front (default: output)",
     )
     args = parser.parse_args(argvs)
     print(args)
 
+    args.output_path = "output/" + args.output_path
     # Create experiment folder
     if not os.path.isdir(args.output_path):
         os.makedirs(args.output_path)
@@ -46,12 +63,8 @@ def train_cli(argvs=sys.argv[1:]):
     use_cuda = torch.cuda.is_available()
     torch.manual_seed(args.seed)
 
-    # Define the data loaders
-    train_loader = loader("train", args.batch_size, shuffle=True)
-    validation_loader = loader("val", args.batch_size, shuffle=False)
-
     # Define the model, the loss and the optimizer
-    model = Net()
+    model, input_size = get_model(args.model)
     if use_cuda:
         print("\n\n!! Using GPU !!\n\n")
         model.cuda()
@@ -59,20 +72,38 @@ def train_cli(argvs=sys.argv[1:]):
         print("\n\n!! Using CPU !!\n\n")
 
     loss = cross_entropy_loss()
+    losses = pd.DataFrame(
+        None, index=range(1, args.n_epochs + 1), columns=["train_loss", "validation_loss", "validation_accuracy"]
+    )
 
-    optimizer = optim.SGD(model.parameters(), lr=args.learning_rate, momentum=args.momentum)
+    # Define the data loaders
+    args.path_data = "bird_dataset/" + args.path_data
+    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True)
+    validation_loader = loader(args.path_data, input_size, "val", args.batch_size, shuffle=False)
+
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
-        train_on_epoch(model, loss, optimizer, train_loader, use_cuda)
-        validation(model, loss, validation_loader, use_cuda)
+        train_loss = train_on_epoch(model, loss, optimizer, train_loader, use_cuda) / args.batch_size
+        validation_loss, validation_accuracy = validation(model, loss, validation_loader, use_cuda)
 
-        weights_path = args.output_path + "/model_" + str(epoch) + ".pth"
-        torch.save(model.state_dict(), weights_path)
+        losses.loc[epoch, ["train_loss", "validation_loss", "validation_accuracy"]] = [
+            train_loss,
+            validation_loss,
+            validation_accuracy,
+        ]
+        if epoch % 2 == 1:
+            weights_path = args.output_path + f"/{args.model}_{str(epoch)}.pth"
+            torch.save(model.state_dict(), weights_path)
+
+    losses.reset_index().to_feather(args.output_path + f"/{args.model}.feather")
 
 
 def train_on_epoch(model, loss, optimizer, loader, use_cuda):
+    loss_on_batch = None
     model.train()
+
     for batch_idx, (data, target) in enumerate(loader):
         if use_cuda:
             data, target = data.cuda(), target.cuda()
@@ -85,7 +116,10 @@ def train_on_epoch(model, loss, optimizer, loader, use_cuda):
         loss_error.backward()
         optimizer.step()
 
-        if batch_idx % (len(loader) // 10) == 0:
+        if batch_idx % (len(loader) // 5) == 0:
+            loss_on_batch = loss_error.data.item()
             print(
-                f"[{batch_idx * len(data)}/{len(loader.dataset)} ({int(100.0 * batch_idx / len(loader))}%)]\tLoss: {loss_error.data.item():.6f}"
+                f"[{batch_idx * len(data)}/{len(loader.dataset)} ({int(100.0 * batch_idx / len(loader))}%)]\tLoss: {loss_on_batch:.6f}"
             )
+
+    return loss_on_batch
