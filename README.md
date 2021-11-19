@@ -27,10 +27,21 @@ Please use **train --help** to see the different options.
 As the model trains, model checkpoints are saved to files such as `model_x.pth` to the current working directory.
 You can take one of the checkpoints and run:
 
-```
+```Bash
 generate_submission --model [path of the weights] --output_path [path of the output csv file]
 ```
 That generates a file `kaggle.csv` that you can upload to the private kaggle competition website.
+
+### Segmentation part
+To generate segmentation maps from a network, use the following:
+```Bash
+generate_segmentation --model [name of the model] --path_to_segment [path to the images to segment] --path_maps [path where the maps will be stored]
+```
+
+To crop images around birds from maps, use the following:
+```Bash
+crop_from_map --path_to_crop [path to the images to crop] --path_maps [path to the segmentation maps] --path_crops [path where the crops will be stored]
+```
 
 ### Acknowledgments
 The assignment was inspired from Rob Fergus and Soumith Chintala https://github.com/soumith/traffic-sign-detection-homework.<br/>
