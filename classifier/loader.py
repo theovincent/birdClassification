@@ -4,25 +4,13 @@ import torchvision.transforms as transforms
 import torchvision.transforms.functional as F
 import PIL.Image as Image
 
-
-class SquarePad:
-    def __call__(self, image):
-        width, height = image.size[-2:]
-
-        if height < width:
-            padding_height = (width - height) // 2
-            padding = (0, padding_height, 0, width - height - padding_height)
-        else:
-            padding_left = (height - width) // 2
-            padding = (padding_left, 0, height - width - padding_left, 0)
-
-        return F.pad(image, padding, 0, "constant")
+from segmentor.loader import RectangularPad
 
 
 def get_transformation(input_size):
     return transforms.Compose(
         [
-            SquarePad(),
+            RectangularPad(input_size, input_size),
             transforms.Resize(input_size),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
