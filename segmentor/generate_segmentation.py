@@ -50,6 +50,7 @@ def generate_segmentation_cli(argvs=sys.argv[1:]):
 
     # Define the model, the loss and the optimizer
     model, (input_height, input_width) = get_model(args.model, use_cuda)
+    model.eval()
     if use_cuda:
         print("\n\n!! Using GPU !!\n\n")
         model.cuda()
