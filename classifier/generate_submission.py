@@ -9,33 +9,55 @@ def generate_submission_cli(argvs=sys.argv[1:]):
 
     import torch
 
-    from classifier.loader import pil_loader, data_transforms
-    from classifier.model import Net
+    from classifier.loader import pil_loader, get_transformation
+    from classifier.model import get_model
 
     parser = argparse.ArgumentParser("Pipeline to generate a submision file for the Kaggle competition.")
     parser.add_argument(
         "-m",
         "--model",
         type=str,
+        required=True,
         metavar="M",
-        help="the model file to be evaluated. Usually it is of the form model_X.pth",
+        help="the model name (required)",
+        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "inception"],
     )
     parser.add_argument(
-        "-o",
-        "--output_path",
+        "-pw",
+        "--path_weights",
         type=str,
-        default="output/submission/kaggle.csv",
-        metavar="D",
-        help="name of the output csv file (output/submission/kaggle.csv)",
+        required=True,
+        metavar="PW",
+        help="the path to the weights, 'output' will be added to the front (required)",
+    )
+    parser.add_argument(
+        "-ptt",
+        "--path_to_test",
+        type=str,
+        required=True,
+        metavar="PTT",
+        help="the path to the test images, 'bird_dataset/{args.path_to_test}/test_images/mistery_category' will be the final path (required)",
+    )
+    parser.add_argument(
+        "-ps",
+        "--path_submission",
+        type=str,
+        required=True,
+        metavar="PS",
+        help="path where the submision csv file will to stored, 'output/submission/{args.path_submission}.csv' will be the final path (required)",
     )
     args = parser.parse_args(argvs)
     print(args)
 
     use_cuda = torch.cuda.is_available()
 
+    path_weights = f"output/{args.path_weights}"
+    path_to_test = f"bird_dataset/{args.path_to_test}/test_images/mistery_category"
+    path_submission = f"output/submission/{args.path_submission}.csv"
+
     # Retreive the model
-    state_dict = torch.load("output/" + args.model)
-    model = Net()
+    state_dict = torch.load(path_weights)
+    model, input_size = get_model(args.model)
     model.load_state_dict(state_dict)
     model.eval()
     if use_cuda:
@@ -44,21 +66,22 @@ def generate_submission_cli(argvs=sys.argv[1:]):
     else:
         print("\n\n!! Using CPU !!\n\n")
 
-    output_file = open(args.output_path, "w")
-    output_file.write("Id,Category\n")
+    data_transformer = get_transformation(input_size)
 
-    for file in tqdm(os.listdir("bird_dataset/test_images/mistery_category")):
-        if "jpg" in file:
-            data = data_transforms(pil_loader("bird_dataset/test_images/mistery_category/" + f))
+    submission = open(path_submission, "w")
+    submission.write("Id,Category\n")
+
+    for image_name in tqdm(os.listdir(path_to_test)):
+        if "jpg" in image_name:
+            data = data_transformer(pil_loader(f"{path_to_test}/{image_name}"))
             data = data.view(1, data.size(0), data.size(1), data.size(2))
+
             if use_cuda:
                 data = data.cuda()
 
             output = model(data)
             pred = output.data.max(1, keepdim=True)[1]
 
-            output_file.write("%s,%d\n" % (f[:-4], pred))
+            submission.write("%s,%d\n" % (image_name[:-4], pred))
 
-    output_file.close()
-
-    print("Succesfully wrote " + args.output_path + ", you can upload this file to the kaggle competition website")
+    submission.close()

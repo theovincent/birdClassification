@@ -34,13 +34,20 @@ def train_cli(argvs=sys.argv[1:]):
         help="the path that leads to the data, 'bird_dataset' will be added to the front (required)",
     )
     parser.add_argument(
+        "-fe",
+        "--feature_extraction",
+        default=False,
+        action="store_true",
+        help="if given, feature extraction will be performed, otherwise full training will be done, (default: False)",
+    )
+    parser.add_argument(
         "-b", "--batch-size", type=int, default=8, metavar="B", help="input batch size for training (default: 64)"
     )
     parser.add_argument(
         "-e", "--n_epochs", type=int, default=1, metavar="N", help="number of epochs to train (default: 10)"
     )
     parser.add_argument(
-        "-lr", "--learning_rate", type=float, default=0.001, metavar="LR", help="learning rate (default: 0.01)"
+        "-lr", "--learning_rate", type=float, default=0.1, metavar="LR", help="learning rate (default: 0.01)"
     )
     parser.add_argument("-s", "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)")
     parser.add_argument(
@@ -64,7 +71,7 @@ def train_cli(argvs=sys.argv[1:]):
     torch.manual_seed(args.seed)
 
     # Define the model, the loss and the optimizer
-    model, input_size = get_model(args.model)
+    model, input_size = get_model(args.model, feature_extract=args.feature_extraction)
     if use_cuda:
         print("\n\n!! Using GPU !!\n\n")
         model.cuda()
@@ -78,15 +85,20 @@ def train_cli(argvs=sys.argv[1:]):
 
     # Define the data loaders
     args.path_data = "bird_dataset/" + args.path_data
-    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True)
-    validation_loader = loader(args.path_data, input_size, "val", args.batch_size, shuffle=False)
+    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=True)
+    validation_loader = loader(
+        args.path_data, input_size, "val", args.batch_size, shuffle=False, data_augmentation=False
+    )
 
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.1)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", factor=0.1, patience=5)
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
         train_loss = train_on_epoch(model, loss, optimizer, train_loader, use_cuda) / args.batch_size
         validation_loss, validation_accuracy = validation(model, loss, validation_loader, use_cuda)
+
+        scheduler.step(validation_loss)
 
         losses.loc[epoch, ["train_loss", "validation_loss", "validation_accuracy"]] = [
             train_loss,
@@ -97,7 +109,8 @@ def train_cli(argvs=sys.argv[1:]):
             weights_path = args.output_path + f"/{args.model}_{str(epoch)}.pth"
             torch.save(model.state_dict(), weights_path)
 
-    losses.reset_index().to_feather(args.output_path + f"/{args.model}.feather")
+        # Save at each epoch to be sure that the metrics are saved if an error occures
+        losses.reset_index().to_feather(args.output_path + f"/{args.model}.feather")
 
 
 def train_on_epoch(model, loss, optimizer, loader, use_cuda):
