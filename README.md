@@ -16,7 +16,7 @@ nvcc --version
 ```
 Then, download the package *detectron2*:
 ```Bash
-pip install -f "https://dl.fbaipublicfiles.com/detectron2/wheels/{YOUR_CUDA_VERSION}/torch1.10/index.html"
+pip install detectron2 -f "https://dl.fbaipublicfiles.com/detectron2/wheels/{YOUR_CUDA_VERSION}/torch1.10/index.html"
 ```
 
 ### Dataset
