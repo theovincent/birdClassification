@@ -8,7 +8,7 @@ def set_parameter_requires_grad(model, feature_extracting):
             param.requires_grad = False
 
 
-def get_model(model_name, feature_extract=True, num_classes=20):
+def get_model(model_name, feature_extract=False, num_classes=20):
     model_ft = None
     input_size = 0
 
