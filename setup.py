@@ -23,6 +23,7 @@ setup(
         "console_scripts": [
             "train=classifier.train:train_cli",
             "generate_submission=classifier.generate_submission:generate_submission_cli",
+            "store_mistakes=classifier.store_mistakes:store_mistakes_cli",
             "crop_from_map=segmentor.crop_from_map:crop_from_map_cli",
             "generate_segmentation=segmentor.generate_segmentation:generate_segmentation_cli",
         ]
