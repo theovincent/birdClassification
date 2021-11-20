@@ -7,7 +7,10 @@ import numpy as np
 from segmentor.loader import RectangularPad
 
 
-NORMALIZATION_COEFFICIENTS = {"mean": np.array([0.485, 0.456, 0.406]), "std": np.array([0.229, 0.224, 0.225])}
+NORMALIZATION_COEFFICIENTS = {
+    "mean": np.array([0.30847357, 0.31463413, 0.27157442]),
+    "std": np.array([0.26294333, 0.26491422, 0.24728666]),
+}
 
 
 class CustomImageFolder(torch.utils.data.Dataset):
@@ -20,13 +23,12 @@ class CustomImageFolder(torch.utils.data.Dataset):
         self.list_path_images = []
         self.list_targets = []
 
-        for _, class_directories, _ in os.walk(root_dir):
-            for class_directory in class_directories:
-                if class_directory == "mistakes":
-                    continue
-                for image_name in os.listdir(f"{root_dir}/{class_directory}"):
-                    self.list_path_images.append(f"{class_directory}/{image_name}")
-                    self.list_targets.append(FOLDER_TO_TARGET[class_directory])
+        for class_directory in os.listdir(root_dir):
+            if class_directory == "mistakes":
+                continue
+            for image_name in os.listdir(f"{root_dir}/{class_directory}"):
+                self.list_path_images.append(f"{class_directory}/{image_name}")
+                self.list_targets.append(FOLDER_TO_TARGET[class_directory])
 
     def __len__(self):
         return len(self.list_targets)

@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from tqdm import tqdm
 
-from classifier.loader import loader, unnormalizer
+from classifier.loader import loader
 
 
 def compute_normalization_coefficients_cli(argvs=sys.argv[1:]):
@@ -28,6 +28,7 @@ def compute_normalization_coefficients_cli(argvs=sys.argv[1:]):
     )
     args = parser.parse_args(argvs)
     print(args)
+    print("\n\n\n!!! Remove previous normalization !!!\n\n\n")
 
     path_to_normalize = f"bird_dataset/{args.path_to_normalize}"
 
@@ -37,11 +38,11 @@ def compute_normalization_coefficients_cli(argvs=sys.argv[1:]):
     std_train_data = np.zeros(3)
 
     for image_batch, _ in tqdm(data_loader):
-        image = np.array(unnormalizer(image_batch).permute(0, 2, 3, 1))[0]
+        image = np.array(image_batch.permute(0, 2, 3, 1))[0]
 
         for channel in range(3):
-            mean_train_data += np.mean(image[:, :, channel])
-            std_train_data += np.std(image[:, :, channel])
+            mean_train_data[channel] += np.mean(image[:, :, channel])
+            std_train_data[channel] += np.std(image[:, :, channel])
 
     print("Mean per channel:\n", mean_train_data / len(data_loader))
     print("\nStd per channel:\n", std_train_data / len(data_loader))
