@@ -57,7 +57,7 @@ def train_cli(argvs=sys.argv[1:]):
         "-lr",
         "--learning_rate",
         type=float,
-        default=0.1,
+        default=0.05,
         metavar="LR",
         help="first learning rate before decreasing (default: 0.05)",
     )
