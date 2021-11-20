@@ -1,16 +1,20 @@
 from setuptools import setup
 
+CUDA_VERSION = "cu102"
+
 setup(
     name="birdClassification",
     version="0.1",
     description="Classifies bird from the Caltech-UCSD Birds-200-2011 dataset.",
     packages=["classifier", "segmentor"],
     requires=["setuptools", "wheel"],
+    dependency_links=[
+        "https://dl.fbaipublicfiles.com/detectron2/wheels/{CUDA_VERSION}/torch1.10/index.html",
+    ],
     install_requires=[
-        "torch",
+        "torch==1.10",
         "torchvision",
         "tqdm",
-        "detectron2==0.6+cu102",
         "opencv-python",
         "pandas",
         "ipywidgets",

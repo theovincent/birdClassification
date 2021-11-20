@@ -10,6 +10,14 @@ To install the dependencies, run the following in the folder where [setup.py](se
 ```Bash
 pip install -e .[dev]
 ```
+If you want to use the segmentor, then you need to modify the [setup.py](setup.py) file with your cuda version. To get it, you can type: 
+```Bash
+nvcc --version
+```
+Then, download the package *detectron2*:
+```Bash
+pip install -f "https://dl.fbaipublicfiles.com/detectron2/wheels/{YOUR_CUDA_VERSION}/torch1.10/index.html"
+```
 
 ### Dataset
 We will be using a dataset containing 200 different classes of birds adapted from the [CUB-200-2011 dataset](http://www.vision.caltech.edu/visipedia/CUB-200-2011.html).
