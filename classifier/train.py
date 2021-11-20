@@ -58,6 +58,13 @@ def train_cli(argvs=sys.argv[1:]):
         metavar="E",
         help="folder where experiment outputs are located, 'output' will be added to the front (default: output)",
     )
+    parser.add_argument(
+        "-c",
+        "--colab",
+        default=False,
+        action="store_true",
+        help="if given, path_data will be modified with the correct path to the data in my google drive , otherwise nothing happens, (default: False)",
+    )
     args = parser.parse_args(argvs)
     print(args)
 
@@ -84,7 +91,12 @@ def train_cli(argvs=sys.argv[1:]):
     )
 
     # Define the data loaders
-    args.path_data = "bird_dataset/" + args.path_data
+    if args.colab:
+        args.path_data = (
+            "/content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/bird_dataset/" + args.path_data
+        )
+    else:
+        args.path_data = "bird_dataset/" + args.path_data
     train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=True)
     validation_loader = loader(
         args.path_data, input_size, "val", args.batch_size, shuffle=False, data_augmentation=False
