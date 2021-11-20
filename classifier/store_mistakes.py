@@ -15,7 +15,7 @@ def store_mistakes_cli(argvs=sys.argv[1:]):
     from classifier.loader import pil_loader, get_transformation
     from classifier.model import get_model
 
-    parser = argparse.ArgumentParser("Pipeline to generate a submision file for the Kaggle competition.")
+    parser = argparse.ArgumentParser("Pipeline to store the clissification mistakes done by a neural network.")
     parser.add_argument(
         "-m",
         "--model",
