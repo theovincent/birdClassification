@@ -51,9 +51,9 @@ def get_transformation(input_size, data_augmentation):
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomApply([transforms.ColorJitter(brightness=0.5, hue=0.3)], p=0.3),
             transforms.RandomApply([transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5))], p=0.4),
-            transforms.RandomApply([transforms.RandomRotation((-30, 30), expand=True)], p=0.7),
             transforms.RandomAdjustSharpness(4, p=0.2),
             transforms.RandomAutocontrast(p=0.7),
+            transforms.RandomApply([transforms.RandomRotation((-30, 30), expand=True)], p=0.7),
         ]
     else:
         augmentation_transform = []
