@@ -102,7 +102,7 @@ def train_cli(argvs=sys.argv[1:]):
         )
     else:
         args.path_data = "bird_dataset/" + args.path_data
-    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=True)
+    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=False)
     validation_loader = loader(
         args.path_data, input_size, "val", args.batch_size, shuffle=False, data_augmentation=False
     )
