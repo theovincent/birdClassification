@@ -132,14 +132,14 @@ def train_cli(argvs=sys.argv[1:]):
     )
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.05)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "max", factor=0.5, patience=6, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", factor=0.5, patience=6, verbose=True)
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
         train_loss = train_on_epoch(model, loss, optimizer, train_loader, use_cuda) / args.batch_size
         validation_loss, validation_accuracy = validation(model, loss, validation_loader, use_cuda)
 
-        scheduler.step(validation_accuracy)
+        scheduler.step(validation_loss)
 
         losses.loc[epoch, ["train_loss", "validation_loss", "validation_accuracy"]] = [
             train_loss,
