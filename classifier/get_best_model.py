@@ -14,7 +14,7 @@ def get_best_model_cli(argvs=sys.argv[1:]):
         required=True,
         metavar="M",
         help="the model name (required)",
-        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "inception"],
+        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "efficientnet"],
     )
     parser.add_argument(
         "-po",
@@ -28,4 +28,4 @@ def get_best_model_cli(argvs=sys.argv[1:]):
 
     losses = pd.read_feather(f"output/{args.path_output}/{args.model}.feather").set_index("index")
 
-    print(int(losses.loc[losses.index % 2 == 1, "validation_accuracy"].idxmax()), end="")
+    print(int(losses.loc[losses.index % 2 == 1, "validation_loss"].idxmin()), end="")
