@@ -57,9 +57,9 @@ def train_cli(argvs=sys.argv[1:]):
         "-lr",
         "--learning_rate",
         type=float,
-        default=0.05,
+        default=0.0005,
         metavar="LR",
-        help="first learning rate before decreasing (default: 0.05)",
+        help="first learning rate before decreasing (default: 0.0005)",
     )
     parser.add_argument("-s", "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)")
     parser.add_argument(
@@ -102,20 +102,20 @@ def train_cli(argvs=sys.argv[1:]):
         )
     else:
         args.path_data = "bird_dataset/" + args.path_data
-    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=False)
+    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=True)
     validation_loader = loader(
         args.path_data, input_size, "val", args.batch_size, shuffle=False, data_augmentation=False
     )
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.05)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", factor=0.1, patience=5)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "max", factor=0.5, patience=3, verbose=True)
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
         train_loss = train_on_epoch(model, loss, optimizer, train_loader, use_cuda) / args.batch_size
         validation_loss, validation_accuracy = validation(model, loss, validation_loader, use_cuda)
 
-        scheduler.step(validation_loss)
+        scheduler.step(validation_accuracy)
 
         losses.loc[epoch, ["train_loss", "validation_loss", "validation_accuracy"]] = [
             train_loss,
