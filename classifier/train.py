@@ -48,7 +48,7 @@ def train_cli(argvs=sys.argv[1:]):
         help="if given, feature extraction will be performed, otherwise full training will be done, (default: False)",
     )
     parser.add_argument(
-        "-bs", "--batch_size", type=int, default=8, metavar="BS", help="input batch size for training (default: 64)"
+        "-bs", "--batch_size", type=int, default=64, metavar="BS", help="input batch size for training (default: 64)"
     )
     parser.add_argument(
         "-ne", "--n_epochs", type=int, default=1, metavar="NE", help="number of epochs to train (default: 10)"
@@ -108,7 +108,7 @@ def train_cli(argvs=sys.argv[1:]):
     )
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.05)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "max", factor=0.5, patience=3, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "max", factor=0.5, patience=4, verbose=True)
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
