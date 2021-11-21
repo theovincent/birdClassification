@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for MODEL in resnet alexnet vgg squeezenet densenet
+for MODEL in resnet alexnet vgg squeezenet densenet efficientnet
 do
     train -c -m $MODEL -pd crop_from_gt -bs 32 -ne 80 -lr 0.0005 -po crop_from_gt
 
