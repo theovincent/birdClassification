@@ -1,5 +1,6 @@
 import PIL.Image as Image
 import numpy as np
+import torch
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as F
 
@@ -10,7 +11,10 @@ class RectangularPad:
         self.input_width = input_width
 
     def __call__(self, image):
-        width, height = image.size[-2:]
+        if torch.is_tensor(image):
+            height, width = image.size()[-2:]
+        else:  # PIL Image
+            width, height = image.size[-2:]
 
         total_padding_height = int(self.input_height * width / self.input_width) - height
         total_padding_width = int(self.input_width * height / self.input_height) - width
