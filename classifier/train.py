@@ -30,7 +30,15 @@ def train_cli(argvs=sys.argv[1:]):
         required=True,
         metavar="M",
         help="the model name (required)",
-        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "inception"],
+        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "efficientnet"],
+    )
+    parser.add_argument(
+        "-psw",
+        "--path_starting_weights",
+        type=str,
+        default=None,
+        metavar="PSW",
+        help="the path to the starting weights, if None, take the ones trained on ImageNet, 'output' will be added to the front (default: None)",
     )
     parser.add_argument(
         "-pd",
@@ -80,10 +88,20 @@ def train_cli(argvs=sys.argv[1:]):
 
     # Torch meta settings
     use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        map_location = torch.device("gpu")
+    else:
+        map_location = torch.device("cpu")
     torch.manual_seed(args.seed)
 
     # Define the model, the loss and the optimizer
-    model, input_size = get_model(args.model, feature_extract=args.feature_extraction)
+    model, input_size = get_model(
+        args.model, feature_extract=args.feature_extraction, pretrained=args.path_starting_weights is None
+    )
+    if args.path_starting_weights is not None:
+        state_dict = torch.load(f"output/{args.path_starting_weights}", map_location=map_location)
+        model.load_state_dict(state_dict)
+
     if use_cuda:
         print("\n\n!! Using GPU !!\n\n")
         model.cuda()

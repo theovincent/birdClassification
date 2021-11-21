@@ -61,7 +61,7 @@ def generate_submission_cli(argvs=sys.argv[1:]):
 
     # Retreive the model
     state_dict = torch.load(path_weights, map_location=map_location)
-    model, input_size = get_model(args.model)
+    model, input_size = get_model(args.model, pretrained=False)
     model.load_state_dict(state_dict)
     model.eval()
     if use_cuda:
