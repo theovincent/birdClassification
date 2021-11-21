@@ -2,7 +2,7 @@
 
 for MODEL in efficientnet
 do
-    train -c -m $MODEL -pd crop_from_gt -bs 16 -ne 80 -lr 0.0005 -po crop_from_gt
+    train -c -m $MODEL -pd crop_from_gt -bs 8 -ne 80 -lr 0.00005 -po crop_from_gt
 
     cp output/crop_from_gt/$MODEL.feather /content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/output/crop_from_gt/
     cp output/crop_from_gt/$MODEL\_$(get_best_model -m $MODEL -po crop_from_gt).pth /content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/output/crop_from_gt/
