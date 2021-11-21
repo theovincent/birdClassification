@@ -46,7 +46,7 @@ def store_mistakes_cli(argvs=sys.argv[1:]):
 
     use_cuda = torch.cuda.is_available()
     if use_cuda:
-        map_location = torch.device("gpu")
+        map_location = torch.device("cuda")
     else:
         map_location = torch.device("cpu")
 
