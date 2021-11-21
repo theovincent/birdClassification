@@ -49,6 +49,13 @@ def train_cli(argvs=sys.argv[1:]):
         help="the path that leads to the data, 'bird_dataset' will be added to the front (required)",
     )
     parser.add_argument(
+        "-4D",
+        "--classifier_4D",
+        default=False,
+        action="store_true",
+        help="if given, a segmentation map will be added to the input, (default: False)",
+    )
+    parser.add_argument(
         "-fe",
         "--feature_extraction",
         default=False,
@@ -96,7 +103,7 @@ def train_cli(argvs=sys.argv[1:]):
 
     # Define the model, the loss and the optimizer
     model, input_size = get_model(
-        args.model, feature_extract=args.feature_extraction, pretrained=args.path_starting_weights is None
+        args.model, feature_extract=args.feature_extraction, pretrained=args.path_starting_weights is None, classifier_4D=args.classifier_4D
     )
     if args.path_starting_weights is not None:
         if args.colab:
@@ -126,9 +133,9 @@ def train_cli(argvs=sys.argv[1:]):
         )
     else:
         args.path_data = "bird_dataset/" + args.path_data
-    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=True)
+    train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=True, classifier_4D=args.classifier_4D)
     validation_loader = loader(
-        args.path_data, input_size, "val", args.batch_size, shuffle=False, data_augmentation=False
+        args.path_data, input_size, "val", args.batch_size, shuffle=False, data_augmentation=False, classifier_4D=args.classifier_4D
     )
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.05)
