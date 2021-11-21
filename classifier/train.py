@@ -99,7 +99,13 @@ def train_cli(argvs=sys.argv[1:]):
         args.model, feature_extract=args.feature_extraction, pretrained=args.path_starting_weights is None
     )
     if args.path_starting_weights is not None:
-        state_dict = torch.load(f"output/{args.path_starting_weights}", map_location=map_location)
+        if args.colab:
+            state_dict = torch.load(f"output/{args.path_starting_weights}", map_location=map_location)
+        else:
+            state_dict = torch.load(
+                f"/content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/output/{args.path_starting_weights}",
+                map_location=map_location,
+            )
         model.load_state_dict(state_dict)
 
     if use_cuda:
@@ -126,7 +132,7 @@ def train_cli(argvs=sys.argv[1:]):
     )
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.05)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "max", factor=0.5, patience=4, verbose=True)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "max", factor=0.5, patience=6, verbose=True)
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
