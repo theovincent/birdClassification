@@ -24,7 +24,7 @@ class CustomImageFolder(torch.utils.data.Dataset):
         self.list_targets = []
 
         if classifier_4D:
-            self.root_dir = "bird_dataset/raw_images"
+            self.root_dir = self.path_data.replace(self.path_data.split("/")[-1], "raw_images")
         else:
             self.root_dir = self.path_data
 
