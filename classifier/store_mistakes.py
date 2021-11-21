@@ -45,14 +45,18 @@ def store_mistakes_cli(argvs=sys.argv[1:]):
     print(args)
 
     use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        map_location = torch.device("cuda")
+    else:
+        map_location = torch.device("cpu")
 
     path_weights = f"output/{args.path_weights}"
     path_to_evaluate = f"bird_dataset/{args.path_to_evaluate}"
     path_store = f"bird_dataset/{args.path_to_evaluate}/mistakes/{args.path_weights}"
 
     # Retreive the model
-    state_dict = torch.load(path_weights)
-    model, input_size = get_model(args.model)
+    state_dict = torch.load(path_weights, map_location=map_location)
+    model, input_size = get_model(args.model, pretrained=False)
     model.load_state_dict(state_dict)
     model.eval()
     if use_cuda:
@@ -61,7 +65,7 @@ def store_mistakes_cli(argvs=sys.argv[1:]):
     else:
         print("\n\n!! Using CPU !!\n\n")
 
-    data_transformer = get_transformation(input_size)
+    data_transformer = get_transformation(input_size, False)
 
     if not os.path.exists(path_store):
         os.makedirs(path_store)

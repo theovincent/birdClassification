@@ -17,13 +17,28 @@ def train_cli(argvs=sys.argv[1:]):
 
     parser = argparse.ArgumentParser("Pipeline to train a model to classify the birds")
     parser.add_argument(
+        "-c",
+        "--colab",
+        default=False,
+        action="store_true",
+        help="if given, path_data will be modified with the correct path to the data in my google drive, otherwise nothing happens, (default: False)",
+    )
+    parser.add_argument(
         "-m",
         "--model",
         type=str,
         required=True,
         metavar="M",
         help="the model name (required)",
-        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "inception"],
+        choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "efficientnet"],
+    )
+    parser.add_argument(
+        "-psw",
+        "--path_starting_weights",
+        type=str,
+        default=None,
+        metavar="PSW",
+        help="the path to the starting weights, if None, take the ones trained on ImageNet, 'output' will be added to the front (default: None)",
     )
     parser.add_argument(
         "-pd",
@@ -41,37 +56,58 @@ def train_cli(argvs=sys.argv[1:]):
         help="if given, feature extraction will be performed, otherwise full training will be done, (default: False)",
     )
     parser.add_argument(
-        "-b", "--batch-size", type=int, default=8, metavar="B", help="input batch size for training (default: 64)"
+        "-bs", "--batch_size", type=int, default=64, metavar="BS", help="input batch size for training (default: 64)"
     )
     parser.add_argument(
-        "-e", "--n_epochs", type=int, default=1, metavar="N", help="number of epochs to train (default: 10)"
+        "-ne", "--n_epochs", type=int, default=1, metavar="NE", help="number of epochs to train (default: 10)"
     )
     parser.add_argument(
-        "-lr", "--learning_rate", type=float, default=0.1, metavar="LR", help="learning rate (default: 0.01)"
+        "-lr",
+        "--learning_rate",
+        type=float,
+        default=0.0005,
+        metavar="LR",
+        help="first learning rate before decreasing (default: 0.0005)",
     )
     parser.add_argument("-s", "--seed", type=int, default=1, metavar="S", help="random seed (default: 1)")
     parser.add_argument(
-        "-o",
-        "--output_path",
+        "-po",
+        "--path_output",
         type=str,
-        default="output",
-        metavar="E",
-        help="folder where experiment outputs are located, 'output' will be added to the front (default: output)",
+        required=True,
+        metavar="PO",
+        help="folder where experiment outputs are located, 'output' will be added to the front (required)",
     )
     args = parser.parse_args(argvs)
     print(args)
 
-    args.output_path = "output/" + args.output_path
+    path_output = f"output/{args.path_output}"
     # Create experiment folder
-    if not os.path.isdir(args.output_path):
-        os.makedirs(args.output_path)
+    if not os.path.isdir(path_output):
+        os.makedirs(path_output)
 
     # Torch meta settings
     use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        map_location = torch.device("cuda")
+    else:
+        map_location = torch.device("cpu")
     torch.manual_seed(args.seed)
 
     # Define the model, the loss and the optimizer
-    model, input_size = get_model(args.model, feature_extract=args.feature_extraction)
+    model, input_size = get_model(
+        args.model, feature_extract=args.feature_extraction, pretrained=args.path_starting_weights is None
+    )
+    if args.path_starting_weights is not None:
+        if args.colab:
+            state_dict = torch.load(f"output/{args.path_starting_weights}", map_location=map_location)
+        else:
+            state_dict = torch.load(
+                f"/content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/output/{args.path_starting_weights}",
+                map_location=map_location,
+            )
+        model.load_state_dict(state_dict)
+
     if use_cuda:
         print("\n\n!! Using GPU !!\n\n")
         model.cuda()
@@ -84,14 +120,19 @@ def train_cli(argvs=sys.argv[1:]):
     )
 
     # Define the data loaders
-    args.path_data = "bird_dataset/" + args.path_data
+    if args.colab:
+        args.path_data = (
+            "/content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/bird_dataset/" + args.path_data
+        )
+    else:
+        args.path_data = "bird_dataset/" + args.path_data
     train_loader = loader(args.path_data, input_size, "train", args.batch_size, shuffle=True, data_augmentation=True)
     validation_loader = loader(
         args.path_data, input_size, "val", args.batch_size, shuffle=False, data_augmentation=False
     )
 
-    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.1)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", factor=0.1, patience=5)
+    optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=0.05)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, "min", factor=0.5, patience=6, verbose=True)
 
     for epoch in range(1, args.n_epochs + 1):
         print(f"Train Epoch {epoch}:")
@@ -106,11 +147,11 @@ def train_cli(argvs=sys.argv[1:]):
             validation_accuracy,
         ]
         if epoch % 2 == 1:
-            weights_path = args.output_path + f"/{args.model}_{str(epoch)}.pth"
-            torch.save(model.state_dict(), weights_path)
+            path_weights = f"{path_output}/{args.model}_{str(epoch)}.pth"
+            torch.save(model.state_dict(), path_weights)
 
         # Save at each epoch to be sure that the metrics are saved if an error occures
-        losses.reset_index().to_feather(args.output_path + f"/{args.model}.feather")
+        losses.reset_index().to_feather(f"{path_output}/{args.model}.feather")
 
 
 def train_on_epoch(model, loss, optimizer, loader, use_cuda):

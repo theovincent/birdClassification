@@ -50,14 +50,18 @@ def generate_submission_cli(argvs=sys.argv[1:]):
     print(args)
 
     use_cuda = torch.cuda.is_available()
+    if use_cuda:
+        map_location = torch.device("cuda")
+    else:
+        map_location = torch.device("cpu")
 
     path_weights = f"output/{args.path_weights}"
     path_to_test = f"bird_dataset/{args.path_to_test}/test_images/mistery_category"
     path_submission = f"output/submission/{args.path_submission}.csv"
 
     # Retreive the model
-    state_dict = torch.load(path_weights)
-    model, input_size = get_model(args.model)
+    state_dict = torch.load(path_weights, map_location=map_location)
+    model, input_size = get_model(args.model, pretrained=False)
     model.load_state_dict(state_dict)
     model.eval()
     if use_cuda:
@@ -66,7 +70,7 @@ def generate_submission_cli(argvs=sys.argv[1:]):
     else:
         print("\n\n!! Using CPU !!\n\n")
 
-    data_transformer = get_transformation(input_size)
+    data_transformer = get_transformation(input_size, False)
 
     submission = open(path_submission, "w")
     submission.write("Id,Category\n")
