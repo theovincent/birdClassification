@@ -65,7 +65,7 @@ def store_mistakes_cli(argvs=sys.argv[1:]):
     else:
         print("\n\n!! Using CPU !!\n\n")
 
-    data_transformer = get_transformation(input_size)
+    data_transformer = get_transformation(input_size, False)
 
     if not os.path.exists(path_store):
         os.makedirs(path_store)
