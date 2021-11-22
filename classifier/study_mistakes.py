@@ -87,7 +87,7 @@ def study_mistakes(args_model, args_classifier_4D, args_path_weights, args_path_
     softmax = torch.nn.Softmax(dim=None)
 
     for folder in tqdm(os.listdir(path_to_evaluate)):
-        if folder == "mistakes":
+        if folder in ["mistakes", "false_negatives"]:
             continue
 
         path_to_evaluate_folder = f"{path_to_evaluate}/{folder}"
