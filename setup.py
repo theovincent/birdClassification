@@ -28,9 +28,10 @@ setup(
             # For the classifier
             "compute_normalization_coefficients=classifier.compute_normalization_coefficients:compute_normalization_coefficients_cli",
             "train=classifier.train:train_cli",
-            "store_mistakes=classifier.store_mistakes:store_mistakes_cli",
-            "generate_submission=classifier.generate_submission:generate_submission_cli",
+            "study_mistakes=classifier.study_mistakes:study_mistakes_cli",
             "get_best_model=classifier.get_best_model:get_best_model_cli",
+            "generate_submission=classifier.generate_submission:generate_submission_cli",
+            "generate_submission_vote=classifier.generate_submission_vote:generate_submission_vote_cli",
             # For the segmentor
             "generate_segmentation=segmentor.generate_segmentation:generate_segmentation_cli",
             "crop_from_map=segmentor.crop_from_map:crop_from_map_cli",
