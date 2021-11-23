@@ -8,8 +8,9 @@ def generate_submission_cli(argvs=sys.argv[1:]):
     import argparse
 
     import torch
+    import numpy as np
 
-    from classifier.loader import pil_loader, get_transformation
+    from classifier.loader import pil_loader, get_geometric_transformation
     from classifier.model import get_model
 
     parser = argparse.ArgumentParser("Pipeline to generate a submision file for the Kaggle competition.")
@@ -21,6 +22,13 @@ def generate_submission_cli(argvs=sys.argv[1:]):
         metavar="M",
         help="the model name (required)",
         choices=["resnet", "alexnet", "vgg", "squeezenet", "densenet", "inception"],
+    )
+    parser.add_argument(
+        "-4D",
+        "--classifier_4D",
+        default=False,
+        action="store_true",
+        help="if given, a segmentation map will be added to the input, (default: False)",
     )
     parser.add_argument(
         "-pw",
@@ -61,7 +69,7 @@ def generate_submission_cli(argvs=sys.argv[1:]):
 
     # Retreive the model
     state_dict = torch.load(path_weights, map_location=map_location)
-    model, input_size = get_model(args.model, pretrained=False)
+    model, input_size = get_model(args.model, pretrained=False, classifier_4D=args.classifier_4D)
     model.load_state_dict(state_dict)
     model.eval()
     if use_cuda:
@@ -70,14 +78,37 @@ def generate_submission_cli(argvs=sys.argv[1:]):
     else:
         print("\n\n!! Using CPU !!\n\n")
 
-    data_transformer = get_transformation(input_size, False)
+    data_transformer = get_geometric_transformation(input_size, False, args.classifier_4D)
 
     submission = open(path_submission, "w")
     submission.write("Id,Category\n")
 
     for image_name in tqdm(os.listdir(path_to_test)):
-        if "jpg" in image_name:
-            data = data_transformer(pil_loader(f"{path_to_test}/{image_name}"))
+        if not args.classifier_4D and "jpg" in image_name:
+            raw_image = pil_loader(f"{path_to_test}/{image_name}")
+            data = data_transformer(raw_image)
+            data = data.view(1, data.size(0), data.size(1), data.size(2))
+
+            if use_cuda:
+                data = data.cuda()
+
+            output = model(data)
+            pred = output.data.max(1, keepdim=True)[1]
+
+            submission.write("%s,%d\n" % (image_name[:-4], pred))
+
+        elif args.classifier_4D and "png" in image_name:
+            image_map = pil_loader(f"{path_to_test}/{image_name}")
+
+            raw_image = pil_loader(
+                f"{path_to_test.replace(path_to_test.split('/')[1], 'raw_images')}/{image_name[:-3]}jpg"
+            )
+
+            data = torch.zeros([4] + list(raw_image.size[::-1]))
+            data[:3] = torch.from_numpy(np.array(raw_image)).permute(2, 0, 1)
+            data[3] = torch.from_numpy(np.array(image_map))[:, :, 0]
+
+            data = data_transformer(data)
             data = data.view(1, data.size(0), data.size(1), data.size(2))
 
             if use_cuda:
