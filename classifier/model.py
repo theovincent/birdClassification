@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from torchvision import models
 
@@ -8,13 +9,32 @@ def set_parameter_requires_grad(model, feature_extracting):
             param.requires_grad = False
 
 
-def get_model(model_name, feature_extract=False, pretrained=True, num_classes=20, classifier_4D=False):
+def get_model(
+    model_name,
+    feature_extract=False,
+    path_starting_weights=None,
+    num_classes=20,
+    classifier_4D=False,
+    map_location=None,
+):
     model_ft = None
     input_size = 0
 
     if model_name == "resnet":
         """Resnet18"""
-        model_ft = models.resnet18(pretrained=pretrained)
+        if path_starting_weights is None:
+            model_ft = models.resnet18(pretrained=False)
+        elif path_starting_weights == "ImageNet":
+            model_ft = models.resnet18(pretrained=True)
+        else:
+            model_ft = models.resnet18(pretrained=False)
+
+            state_dict = torch.load(path_starting_weights, map_location=map_location)
+            # Change the final layer to adapt to the default one
+            state_dict["fc.weight"] = nn.Linear(model_ft.fc.in_features, 1000).weight.data
+            state_dict["fc.bias"] = nn.Linear(model_ft.fc.in_features, 1000).bias.data
+            model_ft.load_state_dict(state_dict)
+
         num_ftrs = model_ft.fc.in_features
         model_ft.fc = nn.Linear(num_ftrs, num_classes)
         input_size = 224
@@ -30,7 +50,14 @@ def get_model(model_name, feature_extract=False, pretrained=True, num_classes=20
 
     elif model_name == "alexnet":
         """Alexnet"""
-        model_ft = models.alexnet(pretrained=pretrained)
+        if path_starting_weights is None:
+            model_ft = models.alexnet(pretrained=False)
+        elif path_starting_weights == "ImageNet":
+            model_ft = models.alexnet(pretrained=True)
+        else:
+            print(f"path_starting_weights: {path_starting_weights}")
+            print("This is not supported")
+            exit()
         num_ftrs = model_ft.classifier[6].in_features
         model_ft.classifier[6] = nn.Linear(num_ftrs, num_classes)
         input_size = 224
@@ -51,7 +78,19 @@ def get_model(model_name, feature_extract=False, pretrained=True, num_classes=20
 
     elif model_name == "vgg":
         """VGG11_bn"""
-        model_ft = models.vgg11_bn(pretrained=pretrained)
+        if path_starting_weights is None:
+            model_ft = models.vgg11_bn(pretrained=False)
+        elif path_starting_weights == "ImageNet":
+            model_ft = models.vgg11_bn(pretrained=True)
+        else:
+            model_ft = models.vgg11_bn(pretrained=False)
+
+            state_dict = torch.load(path_starting_weights, map_location=map_location)
+            # Change the final layer to adapt to the default one
+            state_dict["classifier.6.weight"] = nn.Linear(model_ft.classifier[6].in_features, 1000).weight.data
+            state_dict["classifier.6.bias"] = nn.Linear(model_ft.classifier[6].in_features, 1000).bias.data
+            model_ft.load_state_dict(state_dict)
+
         num_ftrs = model_ft.classifier[6].in_features
         model_ft.classifier[6] = nn.Linear(num_ftrs, num_classes)
         input_size = 224
@@ -70,7 +109,14 @@ def get_model(model_name, feature_extract=False, pretrained=True, num_classes=20
 
     elif model_name == "squeezenet":
         """Squeezenet"""
-        model_ft = models.squeezenet1_0(pretrained=pretrained)
+        if path_starting_weights is None:
+            model_ft = models.squeezenet1_0(pretrained=False)
+        elif path_starting_weights == "ImageNet":
+            model_ft = models.squeezenet1_0(pretrained=True)
+        else:
+            print(f"path_starting_weights: {path_starting_weights}")
+            print("This is not supported")
+            exit()
         model_ft.classifier[1] = nn.Conv2d(512, num_classes, kernel_size=(1, 1), stride=(1, 1))
         model_ft.num_classes = num_classes
         input_size = 224
@@ -89,7 +135,19 @@ def get_model(model_name, feature_extract=False, pretrained=True, num_classes=20
 
     elif model_name == "densenet":
         """Densenet"""
-        model_ft = models.densenet121(pretrained=pretrained)
+        if path_starting_weights is None:
+            model_ft = models.densenet121(pretrained=False)
+        elif path_starting_weights == "ImageNet":
+            model_ft = models.densenet121(pretrained=True)
+        else:
+            model_ft = models.densenet121(pretrained=False)
+
+            state_dict = torch.load(path_starting_weights, map_location=map_location)
+            # Change the final layer to adapt to the default one
+            state_dict["classifier.weight"] = nn.Linear(model_ft.classifier.in_features, 1000).weight.data
+            state_dict["classifier.bias"] = nn.Linear(model_ft.classifier.in_features, 1000).bias.data
+            model_ft.load_state_dict(state_dict)
+
         num_ftrs = model_ft.classifier.in_features
         model_ft.classifier = nn.Linear(num_ftrs, num_classes)
         input_size = 224
@@ -108,7 +166,14 @@ def get_model(model_name, feature_extract=False, pretrained=True, num_classes=20
 
     elif model_name == "efficientnet":
         """efficientnet"""
-        model_ft = models.efficientnet_b7(pretrained=pretrained)
+        if path_starting_weights is None:
+            model_ft = models.efficientnet_b7(pretrained=False)
+        elif path_starting_weights == "ImageNet":
+            model_ft = models.efficientnet_b7(pretrained=True)
+        else:
+            print(f"path_starting_weights: {path_starting_weights}")
+            print("This is not supported")
+            exit()
         num_ftrs = 2560
         model_ft.classifier = nn.Sequential(nn.Dropout(), nn.Linear(num_ftrs, num_classes))
         input_size = 224

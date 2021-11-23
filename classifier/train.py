@@ -36,9 +36,9 @@ def train_cli(argvs=sys.argv[1:]):
         "-psw",
         "--path_starting_weights",
         type=str,
-        default=None,
+        default="ImageNet",
         metavar="PSW",
-        help="the path to the starting weights, if None, take the ones trained on ImageNet, 'output' will be added to the front (default: None)",
+        help="the path to the starting weights, if None, takes random weights, 'output' will be added to the front (default: ImageNet)",
     )
     parser.add_argument(
         "-pd",
@@ -110,22 +110,22 @@ def train_cli(argvs=sys.argv[1:]):
     torch.manual_seed(args.seed)
 
     # Define the model, the loss and the optimizer
+    if args.path_starting_weights is not None and args.path_starting_weights != "ImageNet":
+        if args.colab:
+            args.path_starting_weights = (
+                f"/content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/output/{args.path_starting_weights}"
+            )
+        else:
+            args.path_starting_weights = f"output/{args.path_starting_weights}"
+
     model, input_size = get_model(
         args.model,
         feature_extract=args.feature_extraction,
-        pretrained=args.path_starting_weights is None,
+        path_starting_weights=args.path_starting_weights,
         num_classes=args.number_classes,
         classifier_4D=args.classifier_4D,
+        map_location=map_location,
     )
-    if args.path_starting_weights is not None:
-        if args.colab:
-            state_dict = torch.load(f"output/{args.path_starting_weights}", map_location=map_location)
-        else:
-            state_dict = torch.load(
-                f"/content/Drive/MyDrive/MVA/ObjectRecognition/birdClassification/output/{args.path_starting_weights}",
-                map_location=map_location,
-            )
-        model.load_state_dict(state_dict)
 
     if use_cuda:
         print("\n\n!! Using GPU !!\n\n")
