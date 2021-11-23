@@ -68,7 +68,7 @@ def study_mistakes(args_model, args_classifier_4D, args_path_weights, args_path_
 
     # Retreive the model
     state_dict = torch.load(path_weights, map_location=map_location)
-    model, input_size = get_model(args_model, pretrained=False, classifier_4D=args_classifier_4D)
+    model, input_size = get_model(args_model, path_starting_weights=None, classifier_4D=args_classifier_4D)
     model.load_state_dict(state_dict)
     model.eval()
     if use_cuda:
